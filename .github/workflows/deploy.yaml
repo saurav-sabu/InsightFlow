@@ -212,36 +212,69 @@ jobs:
             echo "✅ ECS Service '${{ env.ECS_SERVICE }}' created and deployed successfully!"
           fi
 
-          echo "=== 5. Fetching Live Public IP Address & App URL ==="
+          echo "=== 5. Waiting for Service to stabilize and fetching App URL ==="
           echo "Waiting for task to launch and assign a Public IP..."
           PUBLIC_IP=""
-          for i in {1..12}; do
-            TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --service-name ${{ env.ECS_SERVICE }} --region ${{ env.AWS_REGION }} --query "taskArns[0]" --output text 2>/dev/null || echo "")
+          for i in {1..20}; do
+            # Find running task in cluster
+            TASK_ARN=$(aws ecs list-tasks \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --service-name ${{ env.ECS_SERVICE }} \
+              --desired-status RUNNING \
+              --region ${{ env.AWS_REGION }} \
+              --query "taskArns[0]" \
+              --output text 2>/dev/null || echo "")
+
             if [ -n "$TASK_ARN" ] && [ "$TASK_ARN" != "None" ]; then
-              ENI_ID=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" --region ${{ env.AWS_REGION }} --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text 2>/dev/null || echo "")
+              ENI_ID=$(aws ecs describe-tasks \
+                --cluster ${{ env.ECS_CLUSTER }} \
+                --tasks "$TASK_ARN" \
+                --region ${{ env.AWS_REGION }} \
+                --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" \
+                --output text 2>/dev/null || echo "")
+
               if [ -n "$ENI_ID" ] && [ "$ENI_ID" != "None" ]; then
-                PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids "$ENI_ID" --region ${{ env.AWS_REGION }} --query "NetworkInterfaces[0].Association.PublicIp" --output text 2>/dev/null || echo "")
+                PUBLIC_IP=$(aws ec2 describe-network-interfaces \
+                  --network-interface-ids "$ENI_ID" \
+                  --region ${{ env.AWS_REGION }} \
+                  --query "NetworkInterfaces[0].Association.PublicIp" \
+                  --output text 2>/dev/null || echo "")
+
                 if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "None" ]; then
+                  echo "Found Public IP: ${PUBLIC_IP}"
                   break
                 fi
               fi
             fi
-            echo "Waiting for container to spin up... (attempt $i/12)"
-            sleep 5
+            echo "Waiting for container to spin up and acquire network IP... (attempt $i/20)"
+            sleep 6
           done
 
           if [ -n "$PUBLIC_IP" ] && [ "$PUBLIC_IP" != "None" ]; then
+            echo ""
+            echo "=========================================================="
+            echo "🎉 DEPLOYMENT SUCCESSFUL!"
             echo "=========================================================="
             echo "🚀 LIVE APP URL: http://${PUBLIC_IP}:8000"
             echo "📚 SWAGGER DOCS: http://${PUBLIC_IP}:8000/docs"
             echo "❤️ HEALTH CHECK: http://${PUBLIC_IP}:8000/health"
             echo "=========================================================="
+            echo ""
 
-            echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-            echo "- **App URL:** [http://${PUBLIC_IP}:8000](http://${PUBLIC_IP}:8000)" >> $GITHUB_STEP_SUMMARY
-            echo "- **Swagger Docs:** [http://${PUBLIC_IP}:8000/docs](http://${PUBLIC_IP}:8000/docs)" >> $GITHUB_STEP_SUMMARY
-            echo "- **Health Check:** [http://${PUBLIC_IP}:8000/health](http://${PUBLIC_IP}:8000/health)" >> $GITHUB_STEP_SUMMARY
+            # Write formatted card to GitHub Actions UI Summary Tab
+            echo "## 🚀 InsightFlow is Live on AWS ECS!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Service | Direct Link |" >> $GITHUB_STEP_SUMMARY
+            echo "|:---|:---|" >> $GITHUB_STEP_SUMMARY
+            echo "| **Interactive API Docs (Swagger)** | [http://${PUBLIC_IP}:8000/docs](http://${PUBLIC_IP}:8000/docs) |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Liveness Health Check** | [http://${PUBLIC_IP}:8000/health](http://${PUBLIC_IP}:8000/health) |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Readiness Probe (Qdrant)** | [http://${PUBLIC_IP}:8000/health/ready](http://${PUBLIC_IP}:8000/health/ready) |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "> **Public IP:** \`${PUBLIC_IP}\` | **Port:** \`8000\` | **Region:** \`${{ env.AWS_REGION }}\`" >> $GITHUB_STEP_SUMMARY
           else
-            echo "Task is still provisioning its IP. View it directly in ECS Console:"
+            echo "Container task is still provisioning its IP. View it directly in ECS Console:"
             echo "https://${{ env.AWS_REGION }}.console.aws.amazon.com/ecs/v2/clusters/${{ env.ECS_CLUSTER }}/tasks?region=${{ env.AWS_REGION }}"
+
+            echo "### ⏳ Task is provisioning..." >> $GITHUB_STEP_SUMMARY
+            echo "The container task is launching. Check your Public IP in the [AWS ECS Console](https://${{ env.AWS_REGION }}.console.aws.amazon.com/ecs/v2/clusters/${{ env.ECS_CLUSTER }}/tasks?region=${{ env.AWS_REGION }})." >> $GITHUB_STEP_SUMMARY
           fi
