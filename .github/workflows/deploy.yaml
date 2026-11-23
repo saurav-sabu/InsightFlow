@@ -47,23 +47,25 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # Step 4: Build, tag, and push Docker image to Amazon ECR
+      # Step 4: Build, tag, and push single 'latest' Docker image to Amazon ECR
       - name: Build, tag, and push image to ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Building Docker image for InsightFlow..."
-          docker build \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          # Configure ECR to keep only 1 image (automatically deletes older/untagged images)
+          aws ecr put-lifecycle-policy \
+            --repository-name ${{ env.ECR_REPOSITORY }} \
+            --lifecycle-policy-text '{"rules":[{"rulePriority":1,"description":"Keep only 1 image","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":1},"action":{"type":"expire"}}]}' \
+            --region ${{ env.AWS_REGION }} 2>/dev/null || true
 
-          echo "Pushing images to Amazon ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "Building Docker image for InsightFlow..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+          echo "Pushing single 'latest' image to Amazon ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_OUTPUT
           echo "✅ Pushed: $ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
       # Step 5: Automatically Provision and Deploy to Amazon ECS Fargate
@@ -116,16 +118,7 @@ jobs:
                   {"name": "GOOGLE_API_KEY", "value": "${GOOGLE_API_KEY}"},
                   {"name": "QDRANT_URL", "value": "${QDRANT_URL}"},
                   {"name": "QDRANT_API_KEY", "value": "${QDRANT_API_KEY}"}
-                ],
-                "logConfiguration": {
-                  "logDriver": "awslogs",
-                  "options": {
-                    "awslogs-group": "/ecs/${{ env.TASK_FAMILY }}",
-                    "awslogs-region": "${{ env.AWS_REGION }}",
-                    "awslogs-stream-prefix": "ecs",
-                    "awslogs-create-group": "true"
-                  }
-                }
+                ]
               }
             ]
           }
