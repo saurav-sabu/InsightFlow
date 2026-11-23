@@ -1,0 +1,27 @@
+# Ignore secrets and environment files (Never bake into Docker image!)
+.env
+.env.*
+*.env
+
+# Ignore local virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Ignore Git
+.git/
+.gitignore
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+
+# Ignore build artifacts & docs
+README.md
+template.py
+tests/
