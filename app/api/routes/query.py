@@ -1,6 +1,7 @@
 """Query endpoints for RAG Q&A, token streaming, and vector similarity search."""
 
 import time
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -66,7 +67,7 @@ async def query(request: QueryRequest) -> QueryResponse:
 
     except Exception as e:
         logger.error(f"Error processing query: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process query: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process query: {e!s}")
 
 
 @router.post("/stream")
@@ -80,17 +81,16 @@ async def query_stream(request: QueryRequest) -> StreamingResponse:
 
         def token_generator():
             try:
-                for chunk in rag_chain.stream(request.question):
-                    yield chunk
+                yield from rag_chain.stream(request.question)
             except Exception as e:
                 logger.error(f"Error in token generator: {e}")
-                yield f"\n\n[Error: {str(e)}]"
+                yield f"\n\n[Error: {e!s}]"
 
         return StreamingResponse(token_generator(), media_type="text/plain")
 
     except Exception as e:
         logger.error(f"Error initializing stream: {e}")
-        raise HTTPException(status_code=500, detail=f"Streaming failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Streaming failed: {e!s}")
 
 
 @router.post("/search")
@@ -120,4 +120,4 @@ async def search_documents(request: QueryRequest) -> dict:
 
     except Exception as e:
         logger.error(f"Error searching documents: {e}")
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {e!s}")

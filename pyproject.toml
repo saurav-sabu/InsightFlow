@@ -1,0 +1,22 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "B008",   # Do not perform function call in argument defaults (FastAPI File(), Depends(), Query())
+    "BLE001", # Do not catch blind exception (standard in web API endpoint error handlers)
+    "LOG014", # exc_info outside exception handlers (FastAPI exception handler receives exc as parameter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

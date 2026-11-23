@@ -49,7 +49,7 @@ async def upload_document(file: UploadFile = File(...)) -> DocumentUploadRespons
         raise
     except Exception as e:
         logger.error(f"Error processing file '{file.filename}': {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process document: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {e!s}")
 
 
 @router.get("/info", response_model=DocumentListResponse)
@@ -68,7 +68,7 @@ async def get_collection_info() -> DocumentListResponse:
         )
     except Exception as e:
         logger.error(f"Error retrieving collection info: {e}")
-        raise HTTPException(status_code=500, detail=f"Error fetching collection info: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching collection info: {e!s}")
 
 
 @router.delete("/collection")
@@ -83,4 +83,4 @@ async def delete_collection() -> dict[str, str]:
         return {"message": "Collection deleted successfully"}
     except Exception as e:
         logger.error(f"Error deleting collection: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete collection: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete collection: {e!s}")

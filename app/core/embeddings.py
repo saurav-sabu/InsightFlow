@@ -1,6 +1,7 @@
 """Embedding generation module for converting text into vector representations."""
 
 from functools import lru_cache
+
 from langchain_core.embeddings import Embeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 

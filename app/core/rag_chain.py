@@ -1,6 +1,7 @@
 """RAG chain module using LangChain LCEL (LangChain Expression Language)."""
 
 from typing import Any, AsyncIterator, Iterator
+
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
