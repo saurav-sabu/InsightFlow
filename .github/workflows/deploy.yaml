@@ -1,0 +1,83 @@
+# ==============================================================================
+# InsightFlow RAG Platform - Continuous Deployment (CD) to Amazon ECS
+# ==============================================================================
+# Workflow Triggers:
+# - Automatically triggers on every push/merge to the 'main' branch
+# - Allows manual trigger from GitHub Actions UI ("Run workflow" button)
+#
+# Deployment Flow:
+# 1. Checkout repository code
+# 2. Authenticate with AWS via GitHub Secrets
+# 3. Log into Amazon ECR
+# 4. Build Docker image and push both Git commit SHA and 'latest' tags
+# 5. Trigger rolling zero-downtime update on Amazon ECS (AWS Fargate)
+# ==============================================================================
+
+name: CD - Deploy to Amazon ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions console
+
+# Configuration variables
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'ap-south-1' }}
+  ECR_REPOSITORY: "insightflow"
+  ECS_CLUSTER: "insightflow-cluster"
+  ECS_SERVICE: "insightflow-service"
+
+jobs:
+  # ============================================================================
+  # Single-Stage Job: Build, Push to ECR, and Deploy to ECS Fargate
+  # ============================================================================
+  deploy:
+    name: Build, Push & Deploy to ECS
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository source code
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS credentials securely from GitHub Secrets
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Step 3: Log in to Amazon Elastic Container Registry (ECR)
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Step 4: Build Docker image and push both commit SHA and 'latest' tags
+      - name: Build, tag, and push Docker image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building Docker image for InsightFlow..."
+          docker build \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+          echo "Pushing images to Amazon ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          echo "Image successfully pushed: $ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+      # Step 5: Instruct Amazon ECS to pull the latest image and update service
+      - name: Deploy new image to Amazon ECS Fargate
+        run: |
+          echo "Triggering rolling deployment on Amazon ECS..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+          echo "Deployment triggered! Fargate is updating '${{ env.ECS_SERVICE }}' with zero downtime."
