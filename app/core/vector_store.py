@@ -61,9 +61,7 @@ class VectorStoreService:
         """Create the collection if it does not already exist."""
         try:
             if not self.client.collection_exists(self.collection_name):
-                logger.info(
-                    f"Creating collection '{self.collection_name}' (vector_size={self.vector_size})"
-                )
+                logger.info(f"Creating collection '{self.collection_name}' (vector_size={self.vector_size})")
                 self.client.create_collection(
                     collection_name=self.collection_name,
                     vectors_config=VectorParams(

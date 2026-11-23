@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, ClassVar
 
 from langchain_community.document_loaders import CSVLoader, PyPDFLoader, TextLoader
 from langchain_core.documents import Document
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 class DocumentProcessor:
     """Handles loading documents from disk or upload and chunking them for vector storage."""
 
-    SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".csv"}
+    SUPPORTED_EXTENSIONS: ClassVar[set[str]] = {".pdf", ".txt", ".csv"}
 
     def __init__(self, chunk_size: int | None = None, chunk_overlap: int | None = None):
         """
@@ -35,9 +35,7 @@ class DocumentProcessor:
             separators=["\n\n", "\n", ". ", " ", ""],
             length_function=len,
         )
-        logger.info(
-            f"DocumentProcessor ready: chunk_size={self.chunk_size}, chunk_overlap={self.chunk_overlap}"
-        )
+        logger.info(f"DocumentProcessor ready: chunk_size={self.chunk_size}, chunk_overlap={self.chunk_overlap}")
 
     def load_file(self, file_path: str | Path) -> list[Document]:
         """
@@ -55,9 +53,8 @@ class DocumentProcessor:
         elif ext == ".txt":
             loader = TextLoader(str(path), encoding="utf-8")
         else:
-            raise ValueError(
-                f"Unsupported format '{ext}'. Supported formats: {', '.join(self.SUPPORTED_EXTENSIONS)}"
-            )
+            formats = ", ".join(self.SUPPORTED_EXTENSIONS)
+            raise ValueError(f"Unsupported format '{ext}'. Supported formats: {formats}")
 
         documents = loader.load()
         logger.info(f"Successfully loaded {len(documents)} page(s)/record(s) from {path.name}")
@@ -70,9 +67,8 @@ class DocumentProcessor:
         """
         ext = Path(filename).suffix.lower()
         if ext not in self.SUPPORTED_EXTENSIONS:
-            raise ValueError(
-                f"Unsupported format '{ext}'. Supported formats: {', '.join(self.SUPPORTED_EXTENSIONS)}"
-            )
+            formats = ", ".join(self.SUPPORTED_EXTENSIONS)
+            raise ValueError(f"Unsupported format '{ext}'. Supported formats: {formats}")
 
         # Write uploaded bytes to a temporary file so LangChain loaders can read it
         with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:

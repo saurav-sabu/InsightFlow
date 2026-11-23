@@ -17,7 +17,7 @@ for file_path in FILES:
     path = Path(file_path)
     # Create parent directories
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Create empty file if it doesn't already exist
     if not path.exists():
         path.touch()

@@ -1,6 +1,6 @@
 [tool.ruff]
 target-version = "py312"
-line-length = 100
+line-length = 120
 
 [tool.ruff.lint]
 select = [
@@ -14,8 +14,10 @@ select = [
 ]
 ignore = [
     "B008",   # Do not perform function call in argument defaults (FastAPI File(), Depends(), Query())
+    "B904",   # Within an except clause, raise exceptions with raise ... from err
     "BLE001", # Do not catch blind exception (standard in web API endpoint error handlers)
     "LOG014", # exc_info outside exception handlers (FastAPI exception handler receives exc as parameter)
+    "E501",   # Line too long (handled by formatter)
 ]
 
 [tool.ruff.lint.isort]

@@ -5,7 +5,7 @@ import sys
 def setup_logging(log_level: str = "INFO") -> None:
     """
     Configure global application logging.
-    
+
     Args:
         log_level: Logging level as string ('DEBUG', 'INFO', 'WARNING', 'ERROR').
     """
@@ -27,7 +27,7 @@ def setup_logging(log_level: str = "INFO") -> None:
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger for a specific module.
-    
+
     Usage:
         from app.utils.logger import get_logger
         logger = get_logger(__name__)

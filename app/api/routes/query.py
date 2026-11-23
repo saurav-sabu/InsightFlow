@@ -67,7 +67,7 @@ async def query(request: QueryRequest) -> QueryResponse:
 
     except Exception as e:
         logger.error(f"Error processing query: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process query: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Failed to process query: {e!s}") from e
 
 
 @router.post("/stream")
@@ -90,7 +90,7 @@ async def query_stream(request: QueryRequest) -> StreamingResponse:
 
     except Exception as e:
         logger.error(f"Error initializing stream: {e}")
-        raise HTTPException(status_code=500, detail=f"Streaming failed: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Streaming failed: {e!s}") from e
 
 
 @router.post("/search")
@@ -120,4 +120,4 @@ async def search_documents(request: QueryRequest) -> dict:
 
     except Exception as e:
         logger.error(f"Error searching documents: {e}")
-        raise HTTPException(status_code=500, detail=f"Search failed: {e!s}")
+        raise HTTPException(status_code=500, detail=f"Search failed: {e!s}") from e

@@ -61,11 +61,13 @@ class RAGASEvaluator:
 
         try:
             # Build Dataset in the format RAGAS expects
-            dataset = Dataset.from_dict({
-                "question": [question],
-                "answer": [answer],
-                "contexts": [contexts],
-            })
+            dataset = Dataset.from_dict(
+                {
+                    "question": [question],
+                    "answer": [answer],
+                    "contexts": [contexts],
+                }
+            )
 
             # Run synchronous evaluate() in a non-blocking thread pool
             result = await asyncio.to_thread(
@@ -81,8 +83,12 @@ class RAGASEvaluator:
             elapsed_ms = round((time.time() - start_time) * 1000, 2)
 
             scores = {
-                "faithfulness": round(float(row["faithfulness"]), 4) if "faithfulness" in row and row["faithfulness"] is not None else None,
-                "answer_relevancy": round(float(row["answer_relevancy"]), 4) if "answer_relevancy" in row and row["answer_relevancy"] is not None else None,
+                "faithfulness": round(float(row["faithfulness"]), 4)
+                if "faithfulness" in row and row["faithfulness"] is not None
+                else None,
+                "answer_relevancy": round(float(row["answer_relevancy"]), 4)
+                if "answer_relevancy" in row and row["answer_relevancy"] is not None
+                else None,
                 "evaluation_time_ms": elapsed_ms,
                 "error": None,
             }

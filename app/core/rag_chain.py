@@ -1,6 +1,7 @@
 """RAG chain module using LangChain LCEL (LangChain Expression Language)."""
 
-from typing import Any, AsyncIterator, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
@@ -89,14 +90,9 @@ class RAGChain:
         context = format_docs(docs)
 
         # Generate answer using the retrieved context
-        answer = (self.prompt | self.llm | StrOutputParser()).invoke(
-            {"context": context, "question": question}
-        )
+        answer = (self.prompt | self.llm | StrOutputParser()).invoke({"context": context, "question": question})
 
-        sources = [
-            {"content": doc.page_content, "metadata": doc.metadata}
-            for doc in docs
-        ]
+        sources = [{"content": doc.page_content, "metadata": doc.metadata} for doc in docs]
         return {"answer": answer, "sources": sources}
 
     async def aquery(self, question: str) -> str:
@@ -113,14 +109,9 @@ class RAGChain:
         docs = await self.retriever.ainvoke(question)
         context = format_docs(docs)
 
-        answer = await (self.prompt | self.llm | StrOutputParser()).ainvoke(
-            {"context": context, "question": question}
-        )
+        answer = await (self.prompt | self.llm | StrOutputParser()).ainvoke({"context": context, "question": question})
 
-        sources = [
-            {"content": doc.page_content, "metadata": doc.metadata}
-            for doc in docs
-        ]
+        sources = [{"content": doc.page_content, "metadata": doc.metadata} for doc in docs]
         return {"answer": answer, "sources": sources}
 
     async def aquery_with_evaluation(self, question: str) -> dict:
