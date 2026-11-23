@@ -22,7 +22,7 @@ on:
 
 # Configuration variables
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION || 'ap-south-1' }}
+  AWS_REGION: "ap-southeast-2"
   ECR_REPOSITORY: "insightflow"
   ECS_CLUSTER: "insightflow-cluster"
   ECS_SERVICE: "insightflow-service"
